@@ -2,8 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Shield, KeyRound, ArrowRight, AlertCircle, Info } from 'lucide-react';
-import { DEFAULT_MOCK_TOKEN } from '@/lib/auth';
+import { Shield, KeyRound, ArrowRight, AlertCircle } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -92,23 +91,6 @@ export default function LoginPage() {
             <ArrowRight className="w-4 h-4" />
           </button>
         </form>
-
-        <div className="mt-6 pt-4 border-t border-slate-800/80">
-          <div className="flex items-start gap-2 text-xs text-slate-400 mb-2">
-            <Info className="w-4 h-4 shrink-0 text-slate-500 mt-0.5" />
-            <span>Phase 1 Skeletal Demo: You can click below to autofill the mock operator token for preview evaluation.</span>
-          </div>
-          <button
-            type="button"
-            onClick={() => {
-              setToken(DEFAULT_MOCK_TOKEN);
-              handleLogin(DEFAULT_MOCK_TOKEN);
-            }}
-            className="w-full text-xs text-slate-400 hover:text-slate-200 py-1.5 px-3 rounded bg-slate-800/60 hover:bg-slate-800 border border-slate-700/60 font-mono transition"
-          >
-            Use Mock Preview Token
-          </button>
-        </div>
       </div>
     </div>
   );

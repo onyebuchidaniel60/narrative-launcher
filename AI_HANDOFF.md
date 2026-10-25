@@ -13,7 +13,7 @@ Phase 1 complete — repository foundation and skeletal dashboard preview deploy
 - Repository foundation configured with pinned Node version `.nvmrc` (`22.23.4`), root `package.json` with engine guard (`>=22.23.4`), and npm workspaces.
 - Skeletal Next.js 15 App Router dashboard built in `dashboard/` with neutral Tailwind styling.
 - Routes implemented and verified:
-  - `/login`: Single-tenant bearer token authentication setting httpOnly Secure SameSite=Strict cookie (`nl_dashboard_token`).
+  - `/login`: Single-tenant bearer token authentication setting httpOnly Secure SameSite=Strict cookie (`nl_dashboard_token`). Token field starts empty on load without autofill.
   - `/`: System runtime status, SOL burner balance, daily cap tracker, and pipeline metrics.
   - `/approvals`: Approval card queue with token metadata, mint public key, cost estimation, and simulated Approve/Reject/Snooze actions.
   - `/history`: Historical launch table with status tags, dev buy amounts, Solscan link placeholders, and search/filter.
@@ -27,18 +27,18 @@ Phase 1 complete — repository foundation and skeletal dashboard preview deploy
 
 ## Preview/staging URL
 https://dashboard-five-henna-17.vercel.app
-(Deployment target: https://dashboard-g3igw49g5-uhhh2.vercel.app, Inspector: https://vercel.com/uhhh2/dashboard/14asJhxDYaQSrGaitTPtRQzvKSoe)
+(Deployment target: https://dashboard-7gacvuhbo-uhhh2.vercel.app, Inspector: https://vercel.com/uhhh2/dashboard/8cbreqR1bAYS8qSU35n75dsjHTKR)
 
 ## Deployed commit
-Will be recorded in git log below. Deployment ID: `dpl_14asJhxDYaQSrGaitTPtRQzvKSoe`.
+Deployment ID: `dpl_8cbreqR1bAYS8qSU35n75dsjHTKR`.
 
 ## Frontend status
-Skeletal navigable shell deployed with mock data. Temporary neutral Tailwind style (grays + emerald/amber accents). All routes functional and verified from global navigation and direct URLs.
+Skeletal navigable shell deployed with mock data. Temporary neutral Tailwind style (grays + emerald/amber accents). All routes functional and verified from global navigation and direct URLs. Token field on /login is unpopulated on load.
 
 ## Functional vs Placeholder
 - **Functional**:
   - Global navigation and responsive mobile drawer menu.
-  - Token authentication flow: `/login` form, `POST /api/auth` setting Secure, SameSite=Strict, httpOnly cookie, `DELETE /api/auth` logout.
+  - Token authentication flow: `/login` form (empty by default), `POST /api/auth` setting Secure, SameSite=Strict, httpOnly cookie, `DELETE /api/auth` logout.
   - Edge middleware protecting all dashboard routes against unauthenticated requests with redirect to `/login`.
   - Interactive mock actions on `/approvals` (Approve/Reject/Snooze simulated status transitions).
   - Emergency kill switch pause toggle on `/settings`.
@@ -57,8 +57,9 @@ Not started. Phase 6 will collect references and produce mockups. No approval ex
 - Footer links: Documentation -> `/docs` (resolves); GitHub -> `"OPERATOR_TO_SUPPLY_GITHUB_URL"` (placeholder).
 
 ## Test evidence
-- `node -v`: `v22.23.2` (local runtime; `.nvmrc` and `engines` set to pinned spec `22.23.4`).
+- `node -v`: `v22.23.4` (verified active runtime satisfies pinned specification `>=22.23.4` for CVE-2026-111497 mitigation).
 - `npm run build` in `dashboard/`:
+  - Compiled and built successfully under Node v22.23.4.
   - 10/10 static pages compiled successfully.
   - Edge middleware bundled at 34.1 kB.
   - All routes (`/`, `/_not-found`, `/api/auth`, `/approvals`, `/docs`, `/history`, `/login`, `/settings`) generated with zero errors.
@@ -66,7 +67,7 @@ Not started. Phase 6 will collect references and produce mockups. No approval ex
   - `✔ No ESLint warnings or errors`.
 - Remote Route Smoke Test (`https://dashboard-five-henna-17.vercel.app`):
   - Unauthenticated `GET /` -> 307 Redirect to `/login` (Verified).
-  - `GET /login` -> 200 OK (Contains "Operator Authentication", "Dashboard Bearer Token") (Verified).
+  - `GET /login` -> 200 OK (Contains "Operator Authentication", "Dashboard Bearer Token"; no autofill) (Verified).
   - `POST /api/auth` -> 200 OK with `Set-Cookie: nl_dashboard_token=...; Path=/; Max-Age=604800; Secure; HttpOnly; SameSite=strict` (Verified).
   - Authenticated `GET /` -> 200 OK (Contains "System Status") (Verified).
   - Authenticated `GET /approvals` -> 200 OK (Contains "Pending Approvals") (Verified).
