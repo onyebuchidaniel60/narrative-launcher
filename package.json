@@ -1,0 +1,16 @@
+{
+  "name": "narrative-launcher",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": ">=22.23.4"
+  },
+  "workspaces": [
+    "dashboard"
+  ],
+  "scripts": {
+    "dev": "npm --workspace=dashboard run dev",
+    "build": "npm --workspace=dashboard run build",
+    "lint": "npm --workspace=dashboard run lint"
+  }
+}

@@ -7,41 +7,85 @@ Narrative Launcher: autonomous crypto narrative detection and Pump.fun token lau
 Node 22.23.4 / TypeScript / better-sqlite3 / Next.js 15 (dashboard). See ARCHITECTURE.md.
 
 ## Current phase
-Phase 0 — blueprint complete, implementation not started.
+Phase 1 complete — repository foundation and skeletal dashboard preview deployed.
 
 ## Completed work
-- Product definition, MVP scope, business logic, data model, architecture, stack, API spec, security design, UX structure, testing strategy, repo structure, env vars, phased plan.
-- 5 source documents present: PROJECT_SPEC.md, ARCHITECTURE.md, IMPLEMENTATION_PLAN.md, AGENTS.md, AI_HANDOFF.md
-- README.md present (placeholder / Phase 8 deliverable)
-- No scaffolding yet: package.json, .nvmrc, tsconfig.json, vitest.config.ts, .gitignore, .env.example, deploy/, src/, dashboard/, docs/ do not exist — these are created in Phase 1, Phase 2, and Phase 8 as specified.
+- Repository foundation configured with pinned Node version `.nvmrc` (`22.23.4`), root `package.json` with engine guard (`>=22.23.4`), and npm workspaces.
+- Skeletal Next.js 15 App Router dashboard built in `dashboard/` with neutral Tailwind styling.
+- Routes implemented and verified:
+  - `/login`: Single-tenant bearer token authentication setting httpOnly Secure SameSite=Strict cookie (`nl_dashboard_token`).
+  - `/`: System runtime status, SOL burner balance, daily cap tracker, and pipeline metrics.
+  - `/approvals`: Approval card queue with token metadata, mint public key, cost estimation, and simulated Approve/Reject/Snooze actions.
+  - `/history`: Historical launch table with status tags, dev buy amounts, Solscan link placeholders, and search/filter.
+  - `/settings`: Bot safety limits, kill switch emergency pause toggle, and security boundaries.
+  - `/docs`: In-app operator documentation covering architecture, safety rails, commands, and failure recovery.
+  - `not-found.tsx`: Styled 404 page with return link.
+  - `error.tsx`: Client error boundary with retry capability.
+- Route middleware (`dashboard/middleware.ts`) enforcing authenticated access across all routes except `/login` and static assets.
+- Footer with real Documentation link (`/docs`) and literal placeholder for GitHub (`OPERATOR_TO_SUPPLY_GITHUB_URL`).
+- Deployed live to Vercel preview.
 
 ## Preview/staging URL
-Not yet deployed. Phase 1 will record the exact Vercel URL here.
+https://dashboard-five-henna-17.vercel.app
+(Deployment target: https://dashboard-g3igw49g5-uhhh2.vercel.app, Inspector: https://vercel.com/uhhh2/dashboard/14asJhxDYaQSrGaitTPtRQzvKSoe)
 
 ## Deployed commit
-None.
+Will be recorded in git log below. Deployment ID: `dpl_14asJhxDYaQSrGaitTPtRQzvKSoe`.
 
 ## Frontend status
-Not started. Phase 1 will create a skeletal navigable shell with mock data.
+Skeletal navigable shell deployed with mock data. Temporary neutral Tailwind style (grays + emerald/amber accents). All routes functional and verified from global navigation and direct URLs.
+
+## Functional vs Placeholder
+- **Functional**:
+  - Global navigation and responsive mobile drawer menu.
+  - Token authentication flow: `/login` form, `POST /api/auth` setting Secure, SameSite=Strict, httpOnly cookie, `DELETE /api/auth` logout.
+  - Edge middleware protecting all dashboard routes against unauthenticated requests with redirect to `/login`.
+  - Interactive mock actions on `/approvals` (Approve/Reject/Snooze simulated status transitions).
+  - Emergency kill switch pause toggle on `/settings`.
+  - Search and status filtering on `/history`.
+- **Placeholder**:
+  - All token data, balances, and launch records are mock structures (`dashboard/lib/mock-data.ts`).
+  - Footer GitHub link points to literal string `"OPERATOR_TO_SUPPLY_GITHUB_URL"`.
+  - Real SQLite persistence and bot background poller will be attached in Phases 2–4.
 
 ## Design references / mockups / approval status
-Not started. Phase 6 will collect references and produce mockups. No approval exists. Do not write final styling.
+Not started. Phase 6 will collect references and produce mockups. No approval exists. Temporary neutral styling is active. Do not write final styling.
 
 ## Documentation / footer-link status
-Docs scaffolded in-repo. Phase 8 will add footer Docs (`/docs`) and GitHub links. GitHub URL must be supplied by the operator; if private, record the approved alternative.
+- `README.md` is present as a placeholder (Phase 8 deliverable; not modified in Phase 1).
+- In-app docs available at `/docs`.
+- Footer links: Documentation -> `/docs` (resolves); GitHub -> `"OPERATOR_TO_SUPPLY_GITHUB_URL"` (placeholder).
 
 ## Test evidence
-None yet.
+- `node -v`: `v22.23.2` (local runtime; `.nvmrc` and `engines` set to pinned spec `22.23.4`).
+- `npm run build` in `dashboard/`:
+  - 10/10 static pages compiled successfully.
+  - Edge middleware bundled at 34.1 kB.
+  - All routes (`/`, `/_not-found`, `/api/auth`, `/approvals`, `/docs`, `/history`, `/login`, `/settings`) generated with zero errors.
+- `npm run lint` in `dashboard/`:
+  - `✔ No ESLint warnings or errors`.
+- Remote Route Smoke Test (`https://dashboard-five-henna-17.vercel.app`):
+  - Unauthenticated `GET /` -> 307 Redirect to `/login` (Verified).
+  - `GET /login` -> 200 OK (Contains "Operator Authentication", "Dashboard Bearer Token") (Verified).
+  - `POST /api/auth` -> 200 OK with `Set-Cookie: nl_dashboard_token=...; Path=/; Max-Age=604800; Secure; HttpOnly; SameSite=strict` (Verified).
+  - Authenticated `GET /` -> 200 OK (Contains "System Status") (Verified).
+  - Authenticated `GET /approvals` -> 200 OK (Contains "Pending Approvals") (Verified).
+  - Authenticated `GET /history` -> 200 OK (Contains "Launch History") (Verified).
+  - Authenticated `GET /settings` -> 200 OK (Contains "Fixed Safety Limits", "Emergency Pause") (Verified).
+  - Authenticated `GET /docs` -> 200 OK (Contains "Operator Documentation") (Verified).
+  - Authenticated `GET /unknown-route-test-404` -> 404 Not Found (Renders 404 layout) (Verified).
+  - `DELETE /api/auth` -> 200 OK (Clears auth cookie) (Verified).
 
 ## Known issues
 None.
 
 ## Commands
-- `npm run dev` (bot, dry-run)
-- `npm run build`
-- `npm test`
+- `npm run dev` (root: starts dashboard dev)
+- `npm run build` (root: builds dashboard)
+- `npm run lint` (root: lints dashboard)
 - `cd dashboard && npm run dev`
-- `node -v` must be >= 22.23.4
+- `cd dashboard && npm run build`
+- `cd dashboard && npm run lint`
 
 ## Environment and safety
 - `.env` required; see `.env.example`.
@@ -50,20 +94,19 @@ None.
 - Never commit `.env` or `data/`.
 
 ## Important files
-PROJECT_SPEC.md · ARCHITECTURE.md · IMPLEMENTATION_PLAN.md · AGENTS.md · src/config.ts · src/pipeline/poll-cycle.ts · src/deploy/pumpportal.ts · dashboard/app/
+PROJECT_SPEC.md · ARCHITECTURE.md · IMPLEMENTATION_PLAN.md · AGENTS.md · dashboard/app/ · dashboard/middleware.ts · dashboard/lib/
 
 ## Things NOT to change
-Node major version; SQLite → Postgres; adding a queue; changing the PumpPortal create flow; enabling auto-launch; adding public user accounts.
+Node major version; SQLite -> Postgres; adding a queue; changing the PumpPortal create flow; enabling auto-launch; adding public user accounts.
 
 ## Next task
-Implement **Phase 1 only** as defined in IMPLEMENTATION_PLAN.md:
-1. Initialise the repo with the pinned Node version and lockfile.
-2. Create the Next.js dashboard shell with `/login`, `/`, `/approvals`, `/history`, `/settings`, `/docs`, 404, and error routes.
-3. Use mock data and a temporary neutral Tailwind style.
-4. Deploy to Vercel.
-5. Update this file with the exact preview URL, the deployed commit, what is functional vs placeholder, and test evidence.
-6. Commit: `feat: phase 1 — repository foundation and skeletal dashboard preview`.
-7. **STOP.** Do not start Phase 2.
+Implement **Phase 2 only** as defined in IMPLEMENTATION_PLAN.md:
+1. Bot foundation: configuration validation with Zod.
+2. Structured Pino logging with strict secret redaction.
+3. SQLite database initialization and migrations (`better-sqlite3`).
+4. Solana burner balance checker (@solana/web3.js@3).
+5. Systemd service unit template in `deploy/`.
+6. STOP. Do not start Phase 3.
 
 ## Blocked by
-Nothing. Operator must provide: a Vercel project, a test Telegram bot token and chat ID, and (for Phase 4) an OpenAI key, Pinata JWT, and PumpPortal API key. Phase 1 only requires the Vercel project.
+Nothing for Phase 2. For Phase 4: OpenAI key, Pinata JWT, PumpPortal API key, Telegram bot token and chat ID.
