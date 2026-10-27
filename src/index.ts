@@ -3,6 +3,10 @@ import { getConfig, type Config } from './config.js';
 import { logger } from './logger.js';
 import { closeDb, initDb } from './db/index.js';
 import { getBurnerBalance, sanitizeRpcUrl } from './deploy/balance.js';
+import { CoinGeckoTrendingSource } from './narrative/coingecko.js';
+import { SentimentAlphaSource } from './narrative/sentimentalpha.js';
+import type { NarrativeSource } from './narrative/source.interface.js';
+import { runPollCycle } from './pipeline/poll-cycle.js';
 
 const HEARTBEAT_INTERVAL_MS = 60_000;
 
@@ -32,6 +36,8 @@ function maskedConfig(config: Config): Record<string, unknown> {
     maxDevBuySol: config.MAX_DEV_BUY_SOL,
     devBuySol: config.DEV_BUY_SOL,
     approvalTtlMinutes: config.APPROVAL_TTL_MINUTES,
+    dedupWindowHours: config.DEDUP_WINDOW_HOURS,
+    narrativeSource: config.NARRATIVE_SOURCE,
     solanaRpcUrl: sanitizeRpcUrl(config.SOLANA_RPC_URL),
     burnerWalletPublicKey: config.BURNER_WALLET_PUBLIC_KEY,
     telegramBotToken: maskSecret(),
@@ -45,12 +51,24 @@ function maskedConfig(config: Config): Record<string, unknown> {
   };
 }
 
+/** `manual` intentionally returns null: no automatic polling of any kind. */
+function createNarrativeSource(config: Config): NarrativeSource | null {
+  switch (config.NARRATIVE_SOURCE) {
+    case 'coingecko':
+      return new CoinGeckoTrendingSource();
+    case 'sentimentalpha':
+      return new SentimentAlphaSource(config.SENTIMENT_ALPHA_API_KEY);
+    case 'manual':
+      return null;
+  }
+}
+
 async function main(): Promise<void> {
   const config = loadValidatedConfig();
   logger.info({ config: maskedConfig(config) }, 'configuration loaded');
 
   const dbPath = path.join(config.DATA_DIR, 'launcher.db');
-  initDb(dbPath);
+  const db = initDb(dbPath);
   logger.info({ dbPath }, 'database initialized');
 
   let balanceSol: number | null = null;
@@ -67,11 +85,41 @@ async function main(): Promise<void> {
 
   logger.info(
     { dryRun: config.DRY_RUN, autoLaunch: config.AUTO_LAUNCH, balanceKnown, balanceSol },
-    'bot ready (Phase 2 — no pipeline yet)'
+    'bot ready (Phase 3 — dry-run pipeline)'
   );
 
+  const source = createNarrativeSource(config);
+  let pollTimer: NodeJS.Timeout | null = null;
+  let pollInFlight = false;
+
+  if (!source) {
+    logger.info({ narrativeSource: config.NARRATIVE_SOURCE }, 'manual mode — no automatic polling');
+  } else if (config.BOT_START_STATE === 'paused') {
+    logger.info({ narrativeSource: source.name }, 'bot paused — no polling');
+  } else {
+    const intervalMs = config.POLL_INTERVAL_MINUTES * 60 * 1000;
+    logger.info({ narrativeSource: source.name, intervalMs }, 'starting poll loop');
+
+    pollTimer = setInterval(() => {
+      if (pollInFlight) {
+        logger.warn({ narrativeSource: source.name }, 'poll cycle still running; skipping tick');
+        return;
+      }
+
+      pollInFlight = true;
+      runPollCycle(config, db, source)
+        .catch((error: unknown) => {
+          const message = error instanceof Error ? error.message : String(error);
+          logger.error({ error: message, narrativeSource: source.name }, 'poll cycle crashed');
+        })
+        .finally(() => {
+          pollInFlight = false;
+        });
+    }, intervalMs);
+  }
+
   const heartbeat = setInterval(() => {
-    logger.info({ balanceKnown, balanceSol }, 'heartbeat (Phase 2 — no pipeline yet)');
+    logger.info({ balanceKnown, balanceSol }, 'heartbeat (Phase 3 — dry-run pipeline)');
   }, HEARTBEAT_INTERVAL_MS);
 
   let shuttingDown = false;
@@ -79,6 +127,7 @@ async function main(): Promise<void> {
     if (shuttingDown) return;
     shuttingDown = true;
     clearInterval(heartbeat);
+    if (pollTimer) clearInterval(pollTimer);
     logger.info({ signal }, 'shutting down');
     closeDb();
     process.exit(0);

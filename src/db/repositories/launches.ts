@@ -130,3 +130,39 @@ export function countLaunchesSince(db: Database.Database, sinceIsoString: string
   const row = stmt.get(sinceIsoString) as { count: number };
   return row.count;
 }
+
+/**
+ * Statuses that consume the daily cap. In dry-run there are no LAUNCHED rows,
+ * so SCORED "would_draft" records must count too — otherwise the cap could
+ * never be exercised before live mode.
+ */
+const CAP_CONSUMING_STATUSES = `('SCORED', 'PENDING_APPROVAL', 'APPROVED', 'LAUNCHED')`;
+
+/**
+ * Counts cap-consuming records since a timestamp.
+ *
+ * Timestamp source follows the Phase 2 decision: a real launch is counted by
+ * `launched_at`. Dry-run SCORED records have no `launched_at` (nothing was
+ * launched), so COALESCE falls back to `created_at` for those rows only.
+ */
+export function countLaunchIntentsSince(db: Database.Database, sinceIsoString: string): number {
+  const stmt = db.prepare(
+    `SELECT COUNT(*) as count FROM launches
+     WHERE status IN ${CAP_CONSUMING_STATUSES}
+       AND COALESCE(launched_at, created_at) >= ?`
+  );
+  const row = stmt.get(sinceIsoString) as { count: number };
+  return row.count;
+}
+
+/** True when this narrative hash was already recorded within the dedup window. */
+export function hasRecentLaunch(
+  db: Database.Database,
+  narrativeHash: string,
+  sinceIsoString: string
+): boolean {
+  const row = db
+    .prepare(`SELECT 1 AS found FROM launches WHERE narrative_hash = ? AND created_at >= ?`)
+    .get(narrativeHash, sinceIsoString);
+  return row !== undefined;
+}

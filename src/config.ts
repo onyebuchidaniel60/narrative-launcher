@@ -52,7 +52,21 @@ export const ConfigSchema = z
     NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
     DRY_RUN: z.preprocess((val) => parseBoolean(val, true), z.boolean()),
     AUTO_LAUNCH: z.preprocess((val) => parseBoolean(val, false), z.boolean()),
-    BOT_START_STATE: z.enum(['active', 'paused']).default('paused'),
+    BOT_START_STATE: z.preprocess(
+      (val) => {
+        // Phase 2 documented this as `active|paused`; Phase 3 uses
+        // `running|paused`. `active` is accepted as a legacy alias so existing
+        // .env files keep working, and is normalised to `running`.
+        if (val === undefined || val === null || val === '') return 'paused';
+        if (val === 'active') return 'running';
+        return val;
+      },
+      z.enum(['running', 'paused'], {
+        errorMap: () => ({
+          message: 'BOT_START_STATE must be one of running, paused (or the legacy active)',
+        }),
+      })
+    ),
 
     POLL_INTERVAL_MINUTES: requiredNumber('POLL_INTERVAL_MINUTES', (schema) =>
       schema.positive({ message: 'POLL_INTERVAL_MINUTES must be greater than 0' })
@@ -117,6 +131,21 @@ export const ConfigSchema = z
       .string({ required_error: 'PUMPPORTAL_API_KEY is required' })
       .min(1, { message: 'PUMPPORTAL_API_KEY is required' }),
     SENTIMENT_ALPHA_API_KEY: z.string().optional(),
+
+    // Phase 3: which narrative source the poll loop uses. `manual` disables
+    // automatic polling entirely.
+    NARRATIVE_SOURCE: z.enum(['coingecko', 'sentimentalpha', 'manual']).default('coingecko'),
+
+    // Phase 3: how long a previously seen narrative blocks a re-draft.
+    DEDUP_WINDOW_HOURS: z.preprocess(
+      (val) => {
+        if (val === undefined || val === null || val === '') return 24;
+        return typeof val === 'string' ? Number(val.trim()) : val;
+      },
+      z.number({ invalid_type_error: 'DEDUP_WINDOW_HOURS must be a number' })
+        .finite({ message: 'DEDUP_WINDOW_HOURS must be a finite number' })
+        .positive({ message: 'DEDUP_WINDOW_HOURS must be greater than 0' })
+    ),
 
     DATA_DIR: z.string().default('./data'),
     LOG_LEVEL: z

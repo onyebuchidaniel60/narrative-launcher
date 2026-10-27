@@ -25,6 +25,8 @@ const testConfig: Config = {
   OPENAI_API_KEY: 'sk-mock-key',
   PINATA_JWT: 'mock-pinata-jwt',
   PUMPPORTAL_API_KEY: 'mock-pumpportal-key',
+  NARRATIVE_SOURCE: 'coingecko',
+  DEDUP_WINDOW_HOURS: 24,
   DATA_DIR: './data',
 };
 
