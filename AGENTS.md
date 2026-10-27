@@ -68,3 +68,4 @@ Narrative Launcher: a Node.js/TypeScript bot that detects crypto narratives, dra
 
 ## Stop rule
 Implement one phase, run tests, update `AI_HANDOFF.md`, commit, and **STOP**. Do not proceed to the next phase until instructed.
+Every phase commit must be pushed to origin/main before the phase is reported complete. If push fails, the phase is not complete — report the blocker and stop.

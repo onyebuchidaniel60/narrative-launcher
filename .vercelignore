@@ -1,0 +1,12 @@
+.env
+.env.*
+!.env.example
+data/
+dist/
+node_modules/
+dashboard/node_modules/
+dashboard/.next/
+src/
+__tests__/
+*.md
+!README.md
