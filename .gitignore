@@ -5,7 +5,7 @@ build/
 .env
 .env.*
 !.env.example
-data/
+data/*
 !data/.gitkeep
 coverage/
 *.log
